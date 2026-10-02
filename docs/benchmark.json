@@ -1,0 +1,28 @@
+{
+  "gpu": "NVIDIA GeForce RTX 3060",
+  "noisy_psnr_db": 22.172260284423828,
+  "models": {
+    "scunet": {
+      "cli_seconds": 2.84,
+      "psnr_db": 33.44
+    },
+    "scunet-gan": {
+      "cli_seconds": 2.87,
+      "psnr_db": 32.21
+    },
+    "drunet": {
+      "cli_seconds": 2.52,
+      "psnr_db": 34.44
+    }
+  },
+  "large_image": {
+    "dimensions": [
+      2048,
+      1536
+    ],
+    "model": "scunet",
+    "tile_size": 512,
+    "inference_seconds": 5.15,
+    "peak_allocated_vram_mib": 826
+  }
+}

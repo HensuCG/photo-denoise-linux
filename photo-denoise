@@ -1,0 +1,4 @@
+#!/bin/sh
+APP_PATH=$(readlink -f -- "$0")
+APP_DIR=$(CDPATH= cd -- "$(dirname -- "$APP_PATH")" && pwd)
+exec "$APP_DIR/.venv/bin/photo-denoise" "$@"
