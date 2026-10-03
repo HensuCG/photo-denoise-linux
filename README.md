@@ -4,7 +4,7 @@ Local Linux photo denoising with a GUI, a backup CLI, and verified preservation 
 
 ## AppImage installation
 
-Download **PhotoDenoise-0.2.0-x86_64.AppImage** from the [release page](https://github.com/HensuCG/photo-denoise/releases/tag/v0.2.0), then:
+Download **PhotoDenoise-0.2.0-x86_64.AppImage** from the [release page](https://github.com/HensuCG/photo-denoise-linux/releases/tag/v0.2.0), then:
 
 ```bash
 chmod +x PhotoDenoise-0.2.0-x86_64.AppImage
@@ -58,7 +58,7 @@ Pixels remain in their original encoded color space. These pretrained models are
 Requires Git, Perl, curl, tar and [uv](https://docs.astral.sh/uv/getting-started/installation/). The source installer creates Python 3.12 `.venv`, installs the pinned CUDA developer environment plus GUI/ncnn, downloads official PyTorch checkpoints, and sets up local ExifTool. Use the AppImage for a small installation that downloads only your chosen runtime.
 
 ```bash
-git clone https://github.com/HensuCG/photo-denoise.git
+git clone https://github.com/HensuCG/photo-denoise-linux.git photo-denoise
 cd photo-denoise
 ./scripts/install.sh
 ./photo-denoise                # GUI

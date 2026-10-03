@@ -30,7 +30,7 @@ sudo apt-get install git curl tar perl
 If `uv` is not installed, follow its [installation instructions](https://docs.astral.sh/uv/getting-started/installation/). Then clone and install:
 
 ```bash
-git clone https://github.com/HensuCG/photo-denoise.git
+git clone https://github.com/HensuCG/photo-denoise-linux.git photo-denoise
 cd photo-denoise
 ./scripts/install.sh
 ```

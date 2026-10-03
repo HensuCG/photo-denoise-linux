@@ -29,7 +29,7 @@ QT_QPA_PLATFORM=offscreen PYTHONNOUSERSITE=1 \
   --model-dir build/ncnn --photo test-results/noisy.png --results test-results
 ```
 
-That prepublication smoke uses exact converted model artifacts through local file URLs; release download URLs are checked separately after publication. Generated screenshots, JUnit reports and photos remain local under `test-results/`; private input images are not uploaded. Lint, formatting and shell syntax checks passed.
+The prepublication smoke used exact converted artifacts through local file URLs. The final build also passed a fresh-profile smoke with `--model-dir` omitted: ncnn and both model files were downloaded from their public release URLs, checksum-verified, and used for successful GUI processing. The repository rename to `photo-denoise-linux` redirects the original model download URLs correctly. GitHub asset digests match the local AppImage/model checksums. Generated screenshots, JUnit reports and photos remain local under `test-results/`; private input images are not uploaded. Lint, formatting and shell syntax checks passed.
 
 ### Remaining manual checks
 
