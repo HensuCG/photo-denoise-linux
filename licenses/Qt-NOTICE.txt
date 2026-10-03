@@ -1,0 +1,15 @@
+Photo Denoise distributes unmodified PySide6-Essentials and shiboken6 6.11.2,
+including dynamically linked Qt libraries. Copyright The Qt Company Ltd.
+and other contributors. These components are used under LGPL version 3;
+the corresponding LGPL/GPL texts are included in this directory.
+
+Upstream source matching the distributed version is available at:
+https://github.com/qt/pyside-setup/tree/v6.11.2
+https://github.com/qt/qtbase/tree/v6.11.2
+https://download.qt.io/official_releases/qt/6.11/6.11.2/submodules/
+
+The application does not modify these libraries. To replace the libraries,
+extract the AppImage using --appimage-extract and replace the relevant files
+under squashfs-root/usr/python/lib/python3.12/site-packages, then run AppRun.
+You may modify/relink LGPL components and reverse engineer the application
+for debugging such modifications, as provided by the LGPL.

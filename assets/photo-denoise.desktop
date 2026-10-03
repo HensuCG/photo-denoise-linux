@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Photo Denoise
+Comment=Local AI photo denoising with EXIF preservation
+Exec=photo-denoise %F
+Icon=photo-denoise
+Terminal=false
+Categories=Graphics;Photography;
+MimeType=image/jpeg;image/png;image/tiff;

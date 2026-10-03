@@ -6,8 +6,10 @@ import argparse
 import importlib.metadata
 import json
 import os
+import signal
 import sys
 import tempfile
+import threading
 import time
 from pathlib import Path
 
@@ -34,6 +36,7 @@ def parser() -> argparse.ArgumentParser:
     )
     root.add_argument("--version", action="version", version=__version__)
     sub = root.add_subparsers(dest="command", required=True)
+    sub.add_parser("gui", help="Open the desktop application")
     denoise = sub.add_parser(
         "denoise", help="Denoise files or directories; originals are protected"
     )
@@ -58,6 +61,16 @@ def parser() -> argparse.ArgumentParser:
         help="Blend amount: 0=original pixels, 1=full denoising (default: 1)",
     )
     denoise.add_argument("--device", choices=("cuda", "cpu", "auto"), default="cuda")
+    denoise.add_argument(
+        "--runtime",
+        choices=("cuda", "vulkan", "cpu", "auto"),
+        default=None,
+        help="Inference runtime; --device remains supported for the original CLI",
+    )
+    denoise.add_argument(
+        "--gpu-index", type=int, default=0, help="GPU index within the selected runtime"
+    )
+    denoise.add_argument("--json-events", action="store_true", help=argparse.SUPPRESS)
     denoise.add_argument(
         "--tile-size", type=int, default=512, help="Maximum tile side in pixels (default: 512)"
     )
@@ -150,7 +163,7 @@ def jobs(args) -> list[tuple[Path, Path]]:
     return result
 
 
-def process_photo(source: Path, destination: Path, denoiser, args) -> None:
+def process_photo(source: Path, destination: Path, denoiser, args, progress=None) -> None:
     photo = read_photo(source)
     result = (
         photo.rgb.copy()
@@ -161,6 +174,7 @@ def process_photo(source: Path, destination: Path, denoiser, args) -> None:
             amount=args.amount,
             tile_size=args.tile_size,
             overlap=args.overlap,
+            progress=progress,
         )
     )
     destination.parent.mkdir(parents=True, exist_ok=True)
@@ -184,19 +198,27 @@ def process_photo(source: Path, destination: Path, denoiser, args) -> None:
 
 
 def doctor() -> int:
-    import torch
-
     report = {
         "python": sys.version.split()[0],
-        "torch": torch.__version__,
-        "torch_cuda": torch.version.cuda,
-        "cuda_available": torch.cuda.is_available(),
-        "spandrel": importlib.metadata.version("spandrel"),
         "model_cache": str(cache_directory()),
     }
-    if report["cuda_available"]:
-        props = torch.cuda.get_device_properties(0)
-        report.update(gpu=props.name, vram_gib=round(props.total_memory / 2**30, 1))
+    from .hardware import detect_gpus
+
+    report["vulkan_devices"] = detect_gpus()
+    try:
+        import torch
+
+        report.update(
+            torch=torch.__version__,
+            torch_cuda=torch.version.cuda,
+            cuda_available=torch.cuda.is_available(),
+            spandrel=importlib.metadata.version("spandrel"),
+        )
+        if report["cuda_available"]:
+            props = torch.cuda.get_device_properties(0)
+            report.update(gpu=props.name, vram_gib=round(props.total_memory / 2**30, 1))
+    except ImportError:
+        report["cuda_available"] = False
     try:
         report["exiftool"] = run_exiftool("-ver").stdout.strip()
     except ValueError as error:
@@ -205,13 +227,23 @@ def doctor() -> int:
         name for name, (filename, _) in MODELS.items() if (cache_directory() / filename).is_file()
     ]
     print(json.dumps(report, indent=2))
-    return 0 if report["cuda_available"] and "exiftool" in report else 1
+    return 0 if "exiftool" in report else 1
 
 
 def main(argv=None) -> int:
     root = parser()
     args = root.parse_args(argv)
+    if args.command == "denoise" and threading.current_thread() is threading.main_thread():
+
+        def interrupted(signum, frame):
+            raise KeyboardInterrupt
+
+        signal.signal(signal.SIGTERM, interrupted)
     try:
+        if args.command == "gui":
+            from .gui import main as gui_main
+
+            return gui_main()
         if args.command == "doctor":
             return doctor()
         if args.command == "download":
@@ -229,12 +261,29 @@ def main(argv=None) -> int:
         planned = jobs(args)
         exiftool_command()
         denoiser = None
+
+        def event(kind, **values):
+            if args.json_events:
+                print(json.dumps({"event": kind, **values}), flush=True)
+
         if args.amount:
-            device = resolve_device(args.device)
+            runtime = args.runtime
+            if runtime == "auto":
+                from .hardware import detect_gpus, recommended_runtime
+
+                runtime = recommended_runtime(detect_gpus())
+            device = "cpu" if runtime == "cpu" else args.device
+            if runtime != "vulkan":
+                device = resolve_device(device)
             if not args.quiet:
                 print(f"Loading {args.model} on {device}...", file=sys.stderr)
             denoiser = Denoiser(
-                args.model, args.cache_dir.expanduser(), args.device, offline=args.offline
+                args.model,
+                args.cache_dir.expanduser(),
+                str(device),
+                offline=args.offline,
+                runtime=runtime,
+                gpu_index=args.gpu_index,
             )
         failures = 0
         for index, (source, destination) in enumerate(planned, 1):
@@ -242,7 +291,22 @@ def main(argv=None) -> int:
             if not args.quiet:
                 print(f"[{index}/{len(planned)}] {source.name}...", file=sys.stderr)
             try:
-                process_photo(source, destination, denoiser, args)
+                event("file", index=index, total=len(planned), source=str(source))
+                process_photo(
+                    source,
+                    destination,
+                    denoiser,
+                    args,
+                    progress=lambda done, total: event(
+                        "progress", index=index, files=len(planned), done=done, total=total
+                    ),
+                )
+                event(
+                    "saved",
+                    source=str(source),
+                    output=str(destination),
+                    seconds=time.monotonic() - started,
+                )
                 if not args.quiet:
                     print(
                         f"Saved {destination} ({time.monotonic() - started:.1f}s; metadata verified)",
@@ -250,6 +314,7 @@ def main(argv=None) -> int:
                     )
             except Exception as error:
                 failures += 1
+                event("error", source=str(source), message=str(error))
                 print(f"Error: {source}: {error}", file=sys.stderr)
         return 1 if failures else 0
     except KeyboardInterrupt:

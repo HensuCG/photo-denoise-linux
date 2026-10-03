@@ -9,6 +9,7 @@ fi
 uv venv --python 3.12 --allow-existing .venv
 uv pip install --python .venv/bin/python -r requirements.lock.txt --extra-index-url https://download.pytorch.org/whl/cu128 --index-strategy unsafe-best-match
 uv pip install --python .venv/bin/python --no-deps -e .
+uv pip install --python .venv/bin/python 'PySide6-Essentials==6.11.2' 'ncnn==1.0.20260526'
 if ! command -v exiftool >/dev/null 2>&1 && [ ! -f .tools/exiftool-13.59/exiftool ]; then
     mkdir -p .tools
     curl -fL https://codeload.github.com/exiftool/exiftool/tar.gz/refs/tags/13.59 -o .tools/exiftool-13.59.tar.gz

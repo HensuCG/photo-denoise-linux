@@ -1,5 +1,42 @@
 # Validation results
 
+## GUI/AppImage milestone (0.2.0)
+
+Completed on 2026-10-03 on CachyOS, Python 3.12.13, NVIDIA RTX 3060 12 GB (driver 615.71.09), and AMD RX 6900 XT 16 GB. PySide6/Qt 6.11.2, ncnn 1.0.20260526, PyTorch 2.7.1+cu128 / 2.7.1+cpu. Hands-on user acceptance remains pending; this is a preview release.
+
+**72 automated tests passed in 43.50 seconds**, including real CUDA, both Vulkan devices and CPU inference. Report: `test-results/pytest-gui-runtimes.xml`.
+
+```bash
+QT_QPA_PLATFORM=offscreen PHOTO_DENOISE_TEST_DEVICE=cuda .venv/bin/pytest -q --junitxml=test-results/pytest-gui-runtimes.xml
+.venv/bin/ruff check src tests scripts
+.venv/bin/ruff format --check src tests scripts
+```
+
+Coverage adds GUI runtime/GPU selection, restore/settings filtering, actual GUI-to-worker processing and previews on all four runtime/device combinations, cancellation without partial outputs, setup cancellation, 16-bit TIFF preview normalization and orientation, checked downloads, archive traversal rejection, retry after failed probes, shared-cache removal, CLI runtime dispatch and Vulkan numerical agreement. All original pixel/metadata/input-protection tests remain in the suite.
+
+Vulkan DRUNet outputs are compared against CUDA on odd-sized inputs with mean absolute error below 0.002 on the 0–1 scale. Native Vulkan allocation failures are checked even if ncnn returns success, preventing invalid saves. Winograd convolution is disabled to reduce weight memory under competing GPU workloads. SCUNet conversion was attempted but unsupported attention operations prevented reliable conversion; it is not shipped for Vulkan.
+
+### Packaging and fresh installation checks
+
+The final AppImage is approximately 128.9 MB and contains Python/Qt/image libraries/ExifTool, with no PyTorch, CUDA or ncnn inference libraries. The actual FUSE-mounted executable launches CLI commands. A controlled native GUI launch selected the Wayland platform and produced a screenshot before closing automatically.
+
+Fresh profiles using the bundled interpreter downloaded and checksum-verified the real runtime wheels: Vulkan 8.4 MB, CPU 189.4 MB and CUDA 3.86 GB. The CPU probe reported `2.7.1+cpu` with no CUDA runtime; CUDA reported `2.7.1+cu128`, CUDA 12.8 and the RTX 3060. Each isolated runtime processed a photo successfully through the GUI subprocess path, with metadata verification. Separate actual AppImage CLI checks exercised installed CUDA and CPU libraries. The fresh Vulkan setup smoke also checked settings persistence and absence of PyTorch in the GUI environment.
+
+```bash
+QT_QPA_PLATFORM=offscreen PYTHONNOUSERSITE=1 \
+  build/appimage/PhotoDenoise.AppDir/usr/python/bin/python3.12 \
+  scripts/smoke_appimage.py --app-dir build/appimage/PhotoDenoise.AppDir \
+  --model-dir build/ncnn --photo test-results/noisy.png --results test-results
+```
+
+That prepublication smoke uses exact converted model artifacts through local file URLs; release download URLs are checked separately after publication. Generated screenshots, JUnit reports and photos remain local under `test-results/`; private input images are not uploaded. Lint, formatting and shell syntax checks passed.
+
+### Remaining manual checks
+
+The automated checks establish processing and metadata behavior on this machine. They do not establish desktop usability across distributions or denoising quality on the user's real camera photos. Intel Vulkan and other GPUs are untested. Use [the GUI feedback checklist](docs/GUI_TESTING.md) for display/layout/file-dialog behavior, subjective photo quality, and actual interaction with progress/cancellation/settings.
+
+## Original CLI validation (0.1.0)
+
 Completed on 2026-10-02 on this machine: CachyOS Linux, NVIDIA GeForce RTX 3060 with 12 GB VRAM, NVIDIA driver 615.71.09, Python 3.12.13, PyTorch 2.7.1+cu128, torchvision 0.22.1+cu128, Spandrel 0.4.2, ExifTool 13.59.
 
 ## Automated validation

@@ -1,14 +1,19 @@
 # Third-party components
 
-Application-specific code in this repository is licensed under MIT (see LICENSE). Third-party components are installed or downloaded separately and retain their respective licenses.
+Application code is MIT licensed. Dependencies and pretrained weights retain their upstream terms. The AppImage contains unmodified Python, NumPy, Pillow, tifffile, packaging, PySide6/Qt, shiboken6 and ExifTool. Inference libraries and weights are downloaded separately on request.
 
-| Component | Source and attribution | License reference |
+| Component | Attribution/source | License |
 |---|---|---|
-| SCUNet checkpoints | Kai Zhang et al., Practical Blind Image Denoising via Swin-Conv-UNet and Data Synthesis; official KAIR v1.0 downloads | https://github.com/cszn/SCUNet/blob/main/LICENSE (Apache 2.0) |
-| DRUNet checkpoint | Kai Zhang et al., Plug-and-Play Image Restoration with Deep Denoiser Prior; official KAIR v1.0 download | https://github.com/cszn/DPIR/blob/master/LICENSE |
-| Spandrel | chaiNNer contributors; architecture loading and inference | https://github.com/chaiNNer-org/spandrel |
-| ExifTool 13.59 | Phil Harvey; metadata preservation and camera test fixtures | https://exiftool.org/ (same terms as Perl: Artistic License or GPL) |
-| PyTorch / torchvision | PyTorch contributors; tensor operations and CUDA inference | https://github.com/pytorch/pytorch/blob/main/LICENSE ; https://github.com/pytorch/vision/blob/main/LICENSE |
-| Photographic test image | `testsets/set12/09.png` from SCUNet's upstream test set; used locally for a noise-added benchmark | https://github.com/cszn/SCUNet/tree/main/testsets/set12 |
+| SCUNet checkpoints | Kai Zhang et al.; [SCUNet](https://github.com/cszn/SCUNet), official KAIR v1.0 weights | Apache 2.0; [included notice](licenses/SCUNet.txt) |
+| DRUNet checkpoint and converted ncnn weights | Kai Zhang et al.; [DPIR](https://github.com/cszn/DPIR), official KAIR v1.0 weights converted with pnnx | MIT; [included notice](licenses/DRUNet.txt) |
+| Spandrel | [chaiNNer contributors](https://github.com/chaiNNer-org/spandrel) | MIT |
+| PyTorch / torchvision | [PyTorch](https://github.com/pytorch/pytorch/blob/main/LICENSE), [torchvision](https://github.com/pytorch/vision/blob/main/LICENSE) | BSD-style; notices in downloaded distributions |
+| ncnn / pnnx | [Tencent](https://github.com/Tencent/ncnn) | BSD 3-Clause; [included notice](licenses/ncnn.txt); pnnx is a build tool |
+| PySide6, shiboken6 and Qt 6.11.2 | The Qt Company and contributors; [matching source](https://github.com/qt/pyside-setup/tree/v6.11.2), [Qt source](https://download.qt.io/official_releases/qt/6.11/6.11.2/submodules/) | LGPL 3; [distribution notice](licenses/Qt-NOTICE.txt), [LGPL](licenses/LGPL-3.0.txt), [GPL](licenses/GPL-3.0.txt) |
+| ExifTool 13.59 | [Phil Harvey](https://exiftool.org/), metadata preservation | Same terms as Perl: Artistic License or GPL; LICENSE/README included alongside bundled ExifTool |
+| Python | [Python Software Foundation](https://www.python.org/downloads/source/) | PSF; LICENSE included in bundled Python |
+| NumPy, Pillow, tifffile, packaging | Respective upstream contributors | Notices in bundled Python distribution metadata |
+| AppImage runtime | [AppImage type2-runtime](https://github.com/AppImage/type2-runtime) | MIT; appimagetool is a build tool |
+| Local photographic benchmark | SCUNet `testsets/set12/09.png`, used locally for a noise-added benchmark | Upstream test-set attribution; image is not shipped in the app/repository |
 
-Additional Python and NVIDIA runtime dependencies are recorded in `requirements.lock.txt`; their installed distributions contain the corresponding licensing notices. This repository does not relicense third-party weights or benchmark images.
+The AppImage's LGPL libraries are dynamically loaded and can be replaced after `--appimage-extract`; see the Qt notice. No Qt library changes are made. Additional Python/NVIDIA runtime packages and pinned download URLs are recorded in `requirements.lock.txt` and `src/photo_denoise/runtime-manifest.json`; their wheel distributions include upstream notices. NVIDIA runtime components retain NVIDIA's license terms. This repository does not relicense models, dependencies or benchmark images.

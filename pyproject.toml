@@ -4,22 +4,26 @@ build-backend = "hatchling.build"
 
 [project]
 name = "photo-denoise"
-version = "0.1.0"
-description = "Local CUDA photo denoising with metadata preservation"
+version = "0.2.0"
+description = "Local CUDA, Vulkan and CPU photo denoising with GUI and metadata preservation"
 requires-python = ">=3.12,<3.14"
 dependencies = [
-  "torch==2.7.1", "torchvision==0.22.1", "spandrel==0.4.2",
   "numpy>=2,<3", "Pillow>=11,<13", "tifffile>=2025.1",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "ruff>=0.12"]
+dev = ["pytest>=8", "ruff>=0.12", "pytest-qt>=4"]
+gui = ["PySide6-Essentials==6.11.2"]
+torch = ["torch==2.7.1", "torchvision==0.22.1", "spandrel==0.4.2"]
+vulkan = ["ncnn==1.0.20260526"]
 
 [project.scripts]
-photo-denoise = "photo_denoise.cli:main"
+photo-denoise = "photo_denoise.launch:main"
+photo-denoise-gui = "photo_denoise.gui:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+qt_api = "pyside6"
 markers = ["integration: inference with downloaded official weights"]
 
 [tool.ruff]

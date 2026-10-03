@@ -1,201 +1,87 @@
-# Photo denoise
+# Photo Denoise
 
-A local Linux CLI for denoising photos on an NVIDIA GPU while preserving their metadata. Tested on an RTX 3060, with a CPU option for diagnosis or use without CUDA.
+Local Linux photo denoising with a GUI, a backup CLI, and verified preservation of embedded metadata. Your photos stay on your computer; original files are protected.
 
-## Installation guide
+## AppImage installation
 
-Requires Linux x86_64, Git, Perl, `curl`, `tar`, [uv](https://docs.astral.sh/uv/getting-started/installation/), and a working NVIDIA driver compatible with CUDA 12.8. Allow several GB of disk space for PyTorch and its CUDA runtime libraries. A separate system CUDA toolkit is not required.
-
-Check the NVIDIA driver first:
+Download **PhotoDenoise-0.2.0-x86_64.AppImage** from the [release page](https://github.com/HensuCG/photo-denoise/releases/tag/v0.2.0), then:
 
 ```bash
-nvidia-smi
+chmod +x PhotoDenoise-0.2.0-x86_64.AppImage
+./PhotoDenoise-0.2.0-x86_64.AppImage
 ```
 
-Install the command-line prerequisites using your distribution's package manager. For Arch/CachyOS:
+Requires Linux x86_64 with glibc 2.34 or newer, a working desktop, and Perl for the bundled ExifTool. Install your GPU's NVIDIA or Vulkan drivers through your distribution. A system CUDA toolkit and system Python are not required. `curl` is recommended for downloads. If FUSE mounting fails, run with `--appimage-extract-and-run` before the application arguments.
+
+The AppImage is approximately **129 MB**. On first startup, choose a runtime and GPU; the app downloads and checks only the selected runtime and its default model. A progress bar shows downloaded bytes. Setup can be cancelled and retried; completed downloads are reused. Downloads require internet access; processing after setup is local.
+
+| Runtime | Recommended hardware | Runtime download | Models |
+|---|---|---:|---|
+| CUDA / PyTorch | NVIDIA, including RTX 3060 | 3.86 GB | SCUNet, SCUNet GAN, DRUNet |
+| Vulkan / ncnn | AMD, NVIDIA; Intel is untested | 8.4 MB | DRUNet |
+| CPU | Any compatible x86_64 CPU | 189 MB | SCUNet, SCUNet GAN, DRUNet |
+
+SCUNet models are approximately **72 MB each**; DRUNet is approximately **131 MB**. CUDA setup requires about **16 GB free disk space** for downloads and unpacking; CPU needs 1.5 GB plus model space. GPU drivers must already work. CUDA uses CUDA 12.8 runtime libraries and needs a compatible NVIDIA driver. CPU is generally much slower; relative CUDA/Vulkan speed depends on the GPU and model. Vulkan was tested on RX 6900 XT and RTX 3060. SCUNet conversion to ncnn is not validated and is not offered with Vulkan.
+
+## GUI usage
+
+Add photos or a folder, choose a model, adjust **Denoising amount**, and click **Denoise photos**. Outputs default to the originals' folder with a `-denoised` suffix; choose an output folder to keep results together. Folder structure is retained. Existing outputs require the explicit replacement checkbox. You can cancel processing and change runtime/GPU later in **Settings**.
+
+Amount blends the prediction with the original: 60% applies 60% of the predicted change. DRUNet also has a **noise level** control on a 0–255 scale: start at 15, lower it for light noise and raise it for stronger noise. It is not ISO. SCUNet estimates noise internally. If memory is limited, choose tile size 256 or 128. Original/result previews show the selected photo; assess fine detail in your photo viewer at 100% zoom.
+
+Settings, runtime libraries and verified wheel downloads live in `${XDG_DATA_HOME:-~/.local/share}/photo-denoise`. Model weights live in `${XDG_CACHE_HOME:-~/.cache}/photo-denoise`. Settings can remove a runtime and its unshared downloaded wheels while keeping model weights and photos. `PHOTO_DENOISE_HOME` overrides the settings/runtime directory.
+
+## CLI backup
+
+The same AppImage accepts CLI commands. Runtime libraries installed through the GUI are reused; ordinary `denoise` commands use the selected runtime/GPU.
 
 ```bash
-sudo pacman -S --needed git curl tar perl
+./PhotoDenoise-0.2.0-x86_64.AppImage doctor
+./PhotoDenoise-0.2.0-x86_64.AppImage denoise /path/to/photo.jpg --amount 0.6
+./PhotoDenoise-0.2.0-x86_64.AppImage denoise /path/to/photo.tif --runtime vulkan --gpu-index 0 --model drunet --sigma 20
+./PhotoDenoise-0.2.0-x86_64.AppImage denoise /path/to/photos --recursive --output-dir /path/to/results
+./PhotoDenoise-0.2.0-x86_64.AppImage denoise --help
 ```
 
-For Ubuntu/Debian:
+For Vulkan, specify `--model drunet` in CLI commands; the CLI model default remains SCUNet. `--runtime cpu` and `--runtime cuda` select an already installed runtime explicitly. `--offline` requires cached weights. `--amount 0` skips inference. Quote paths containing spaces. See [the detailed CLI guide](docs/CLI.md) for metadata details, advanced options and original benchmarks.
 
-```bash
-sudo apt-get update
-sudo apt-get install git curl tar perl
-```
+## Formats and metadata
 
-If `uv` is not installed, follow its [installation instructions](https://docs.astral.sh/uv/getting-started/installation/). Then clone and install:
+Supports 8-bit JPEG/PNG and single-page unsigned 8/16-bit RGB or grayscale TIFF, including supported transparency. RAW, 16-bit PNG, CMYK, floating-point/multipage/planar TIFF and premultiplied TIFF alpha are rejected. TIFF output is uncompressed and may be much larger. JPEG is re-encoded, even at amount zero.
+
+JPEG/PNG EXIF is preserved and verified byte for byte, including MakerNotes, unknown tags and original thumbnails. TIFF metadata values are verified while storage tags are regenerated. ICC profiles are copied and verified. Orientation is retained without rotating processing pixels. Existing embedded previews retain the original image; filesystem attributes and external XMP sidecars are outside this workflow. Unsupported metadata produces an error instead of publishing a damaged output. Output writes are atomic.
+
+Pixels remain in their original encoded color space. These pretrained models are not RAW sensor denoisers. Tiled inference can differ slightly from whole-image processing. See [the format and preservation details](docs/CLI.md#metadata-and-pixels).
+
+## Source installation and development
+
+Requires Git, Perl, curl, tar and [uv](https://docs.astral.sh/uv/getting-started/installation/). The source installer creates Python 3.12 `.venv`, installs the pinned CUDA developer environment plus GUI/ncnn, downloads official PyTorch checkpoints, and sets up local ExifTool. Use the AppImage for a small installation that downloads only your chosen runtime.
 
 ```bash
 git clone https://github.com/HensuCG/photo-denoise.git
 cd photo-denoise
 ./scripts/install.sh
+./photo-denoise                # GUI
+./photo-denoise denoise /path/to/photo.jpg
 ```
 
-The installer selects Python 3.12, installs the tested dependencies from `requirements.lock.txt` into `.venv`, downloads the three official model checkpoints, and runs diagnostics. It uses system ExifTool if available, otherwise downloads a checksum-verified local ExifTool 13.59 into `.tools`. It does not install system packages.
-
-The installer also links the launcher into `~/.local/bin` if that command name is unused. To use `photo-denoise` from any directory, add that directory to your PATH if needed:
+For an existing clone, run `git pull --ff-only` and `./scripts/install.sh` to update. To run tests and build:
 
 ```bash
-export PATH="$HOME/.local/bin:$PATH"
-photo-denoise doctor
+uv pip install --python .venv/bin/python -e '.[dev,gui]'
+QT_QPA_PLATFORM=offscreen PHOTO_DENOISE_TEST_DEVICE=cuda .venv/bin/pytest -q
+.venv/bin/ruff check src tests scripts
+.venv/bin/python scripts/build_appimage.py
 ```
 
-Add the export to your shell's startup file to retain it for future terminals. Alternatively, run `./photo-denoise` from the project directory. For an existing installation, use the application directory already on your machine and skip cloning and installation.
+The AppImage builder requires a relocatable uv Python 3.12 and project-local ExifTool. Runtime wheel URLs/checksums are pinned in `src/photo_denoise/runtime-manifest.json`; `scripts/runtime_manifest.py` regenerates that manifest. `scripts/export_ncnn.py --help` describes model conversion; only the shipped DRUNet artifacts are validated.
 
-## First photo
+## Status and troubleshooting
 
-```bash
-./photo-denoise doctor
-./photo-denoise denoise "/path/to/photo.jpg"
-```
+Version 0.2.0 is a preview pending hands-on desktop feedback. Automated Qt tests, real inference, isolated runtime installation and AppImage checks are recorded in [TESTING.md](TESTING.md). Follow [the GUI feedback checklist](docs/GUI_TESTING.md) for manual testing.
 
-The default command uses SCUNet on CUDA and creates `photo-denoised.jpg` beside the original. It never overwrites input files. After installation, all three model checkpoints are cached, so processing does not need a download. Quote paths containing spaces.
+For GPU errors, check `nvidia-smi` or `vulkaninfo`, try a smaller tile, and run `doctor`. For setup failures, keep the error text and retry; completed downloads are retained. Metadata errors leave originals and existing outputs intact. Report your runtime/GPU, exact error and `doctor` output; private photos are not required.
 
-Open the original and the output in your preferred photo viewer and compare them at 100% zoom. Reduce `--amount` if fine texture is too smooth. Each successful save reports that metadata verification passed.
+## Attribution
 
-Reduce the amount of denoising:
-
-```bash
-./photo-denoise denoise /path/to/photo.jpg --amount 0.6
-```
-
-Use DRUNet with explicit noise-level control:
-
-```bash
-./photo-denoise denoise /path/to/photo.jpg --model drunet --sigma 20 --amount 0.8
-```
-
-Process a directory tree:
-
-```bash
-./photo-denoise denoise /path/to/photos --recursive --output-dir /path/to/results
-```
-
-Subdirectories are retained under the output directory. Files ending in the chosen suffix, and files inside a distinct output directory, are skipped during directory discovery so generated outputs do not get processed repeatedly. Explicitly naming a file allows it to be processed regardless of its suffix. Duplicate destination paths are rejected.
-
-Choose a destination for one photo:
-
-```bash
-./photo-denoise denoise /path/to/photo.tif -o /path/to/clean.tif
-```
-
-The output must have the same format as the input. `.jpg`/`.jpeg` and `.tif`/`.tiff` are interchangeable within their format. Existing output files are protected unless `--overwrite` is supplied; input files remain protected even with that option.
-
-For all options:
-
-```bash
-./photo-denoise denoise --help
-```
-
-## Models and strength
-
-| Model | Best starting use | Controls |
-|---|---|---|
-| `scunet` (default) | Real photos; blind noise estimation; PSNR checkpoint | `--amount` |
-| `scunet-gan` | Real photos; perceptual GAN checkpoint | `--amount` |
-| `drunet` | Noise approximated by additive Gaussian noise | `--sigma` and `--amount` |
-
-`--amount` ranges from 0 to 1 and blends the model output with the original decoded pixels. For example, 0.6 applies 60% of the predicted change. It can reduce denoising below the full model result. It does not ask the model to perform stronger denoising than its normal output.
-
-`--sigma` is the assumed noise standard deviation on a 0–255 pixel scale, not ISO and not a percentage. DRUNet defaults to 15; try 5–10 for light noise, 15–25 for moderate noise, and 30–50 for stronger noise. Higher values generally remove more noise and fine texture. SCUNet estimates the noise internally and rejects `--sigma` to avoid presenting a control that has no effect.
-
-`--amount 0` skips inference and model loading. PNG and TIFF retain their decoded pixel values; JPEG is still re-encoded, so its pixels may differ slightly even at amount zero. JPEG defaults to quality 95 and no chroma subsampling. Use `--jpeg-quality 100` for less encoding loss; saving a processed JPEG is not lossless.
-
-## Metadata and pixels
-
-JPEG and PNG copy the entire original EXIF block, including camera MakerNotes, unknown EXIF tags and embedded thumbnails. The output EXIF block is checked byte for byte before the file is published. EXIF orientation is retained and pixels are not rotated; viewers render the output using the same orientation as the input.
-
-TIFF stores EXIF alongside its image data, so TIFF metadata is copied as tags. Pixel-storage tags such as strip offsets and compression describe the new encoding and are regenerated. Existing EXIF, MakerNotes, XMP, IPTC and ICC values are checked, excluding those storage fields. TIFFs are written uncompressed; file size may increase substantially. If a metadata value cannot be retained, processing fails for that photo and no output is published.
-
-ICC profiles are copied and verified byte for byte for all supported formats. Pixels are processed in their existing encoded color space, without conversion into a model-specific working profile. This preserves the profile but does not guarantee equal model performance across unusual color spaces. Existing thumbnails/previews are retained from the original photo; they are not denoised. Filesystem creation dates, extended attributes and external `.xmp` sidecars are outside the embedded-metadata workflow.
-
-| Format | Supported pixels |
-|---|---|
-| JPEG | 8-bit RGB and grayscale |
-| PNG | 8-bit RGB, grayscale, palette images and transparency |
-| TIFF | Single-page, contiguous RGB or MINISBLACK grayscale; unsigned 8-bit or 16-bit; optional unassociated alpha |
-
-Transparency is retained without denoising the alpha channel. Grayscale images use the color model on three identical channels, then average the result back to grayscale. Sixteen-bit TIFFs retain 16-bit output precision, although these pretrained models were not specifically trained as RAW sensor denoisers.
-
-RAW files, 16-bit PNG, CMYK, floating-point TIFF, multipage TIFF, planar TIFF and premultiplied alpha TIFF are rejected with an explanation. Export unsupported photos to a supported RGB TIFF first. Palette PNG pixels are expanded to RGB/RGBA; the original palette encoding is not retained.
-
-## GPU memory and offline use
-
-The default `--tile-size 512 --overlap 32` processes large images in bounded GPU memory. Each output tile receives surrounding context and discards its outer context pixels. Tiled predictions can differ slightly from processing a whole image. For a visible boundary on difficult texture, try `--overlap 64`, or increase tile size if memory allows. Increasing overlap costs time.
-
-If CUDA memory is exhausted, reduce tile size:
-
-```bash
-./photo-denoise denoise /path/to/photo.jpg --tile-size 256
-```
-
-Images are still decoded fully in system RAM. Default compute is float32 for predictable compatibility and output quality.
-
-Model downloads come from the official [KAIR release](https://github.com/cszn/KAIR/releases/tag/v1.0) and are verified against pinned SHA-256 checksums before loading. Checkpoints are loaded using PyTorch's tensor-only mode. The default cache is `${XDG_CACHE_HOME:-~/.cache}/photo-denoise`; override it with `--cache-dir`.
-
-```bash
-./photo-denoise download all
-./photo-denoise denoise /path/to/photo.jpg --offline
-./photo-denoise denoise /path/to/photo.jpg --device cpu
-```
-
-No photos are uploaded. Once checkpoints are cached, inference is entirely local. `--device auto` selects CUDA when available, otherwise CPU; the default `cuda` reports an error instead of silently switching to slower CPU inference.
-
-Each output is written to a temporary file in the destination directory, verified, then published atomically. A failed photo produces an error and batches continue with subsequent photos. Exit codes are 0 for success, 1 for a processing/setup failure, 2 for invalid command syntax, and 130 for interruption. Some photos in a failed batch may have completed successfully. An existing output stays intact if replacement processing fails.
-
-## Troubleshooting
-
-| Problem | Action |
-|---|---|
-| `photo-denoise: command not found` | Run `./photo-denoise` from the clone directory, or add `~/.local/bin` to PATH as shown above. |
-| CUDA is unavailable | Run `nvidia-smi` and `./photo-denoise doctor`. Check that the NVIDIA driver works and the installer completed. Use `--device cpu` to process without GPU access. |
-| CUDA runs out of memory | Close other GPU workloads or use `--tile-size 256`. |
-| Model is missing in offline mode | Run `./photo-denoise download all`, using the same `--cache-dir` if you selected a custom cache. |
-| ExifTool is missing | Rerun `./scripts/install.sh` or set `PHOTO_DENOISE_EXIFTOOL=/absolute/path/to/exiftool`. Perl must be installed. |
-| Metadata verification fails | No new output is published. Read the named tags in the error; keep the original and report the file format and error for investigation. |
-| Unsupported input format | Export to a supported RGB JPEG, 8-bit PNG or unsigned 8/16-bit TIFF. See the format table above. |
-| Output already exists | Choose another destination/suffix, or use `--overwrite` to replace an output. Inputs remain protected. |
-
-If reporting a problem, include the exact command, error message, and `./photo-denoise doctor` output. Avoid sharing private photos or GPS metadata unless you intend to disclose them.
-
-## Update an existing installation
-
-From the project directory:
-
-```bash
-git pull --ff-only
-./scripts/install.sh
-```
-
-The installer reuses cached model weights and installed dependencies when they already match the pinned versions.
-
-## Tests and example output
-
-```bash
-.venv/bin/pytest -q -m 'not integration'
-PHOTO_DENOISE_TEST_DEVICE=cuda .venv/bin/pytest -q -m integration
-.venv/bin/ruff check src tests scripts/benchmark.py
-.venv/bin/ruff format --check src tests scripts/benchmark.py
-```
-
-Integration tests require cached official weights. They default to CPU unless the environment variable above selects CUDA. Camera metadata tests use small fixtures shipped in the local ExifTool source distribution and skip if those fixtures are not installed.
-
-Locally generated `test-results/comparison.png` adds known Gaussian noise to a clean reference image and shows all three outputs. `test-results/benchmark.json` records timings and PSNR. Generated images, weights, environments and test artifacts are excluded from Git. The measured results from the initial RTX 3060 run are included in [docs/benchmark.json](docs/benchmark.json). This is a reproducible example, not a broad ranking of model quality or a benchmark of camera sensor noise.
-
-To reproduce it with a clean reference image:
-
-```bash
-.venv/bin/python scripts/benchmark.py --clean /path/to/clean.png
-```
-
-See [TESTING.md](TESTING.md) for the measured results and validation coverage. For the full test suite with CUDA:
-
-```bash
-PHOTO_DENOISE_TEST_DEVICE=cuda .venv/bin/pytest -q
-```
-
-## Upstream attribution
-
-Inference architectures are provided by [Spandrel](https://github.com/chaiNNer-org/spandrel). The original model projects are [SCUNet](https://github.com/cszn/SCUNet) and [DRUNet / DPIR](https://github.com/cszn/DPIR). Metadata handling uses [ExifTool](https://exiftool.org/). These dependencies and weights retain their upstream licensing terms; see `THIRD_PARTY.md`.
+MIT application code. Models: [SCUNet](https://github.com/cszn/SCUNet), [DRUNet/DPIR](https://github.com/cszn/DPIR); inference: Spandrel, PyTorch and ncnn; GUI: PySide6/Qt; metadata: ExifTool. Dependencies and weights retain their upstream licenses; see [THIRD_PARTY.md](THIRD_PARTY.md).
