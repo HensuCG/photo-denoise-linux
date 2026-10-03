@@ -1,6 +1,6 @@
 # GUI feedback checklist
 
-Automated tests already cover real processing, metadata, cancellation and setup. The remaining checks need a person using the actual desktop and their own photos.
+The user reported full success testing version 0.2.1. This checklist is retained for future releases and other machines. Automated tests cover real processing, metadata, cancellation and setup; the checks below cover actual desktop interaction and real-photo quality.
 
 Launch the AppImage without arguments. You can also use `./photo-denoise` from the source clone. Keep your originals; outputs use a separate suffix by default.
 

@@ -78,7 +78,7 @@ The AppImage builder requires a relocatable uv Python 3.12 and project-local Exi
 
 ## Status and troubleshooting
 
-Version 0.2.1 is a preview pending hands-on desktop feedback. Automated Qt tests, real inference, isolated runtime installation and AppImage checks are recorded in [TESTING.md](TESTING.md). Follow [the GUI feedback checklist](docs/GUI_TESTING.md) for manual testing.
+Version **0.2.1 is stable**, following 83 passing automated tests and successful hands-on GUI testing. Automated Qt tests, real inference, isolated runtime installation and AppImage checks are recorded in [TESTING.md](TESTING.md). Follow [the GUI feedback checklist](docs/GUI_TESTING.md) for manual testing.
 
 For GPU errors, check `nvidia-smi` or `vulkaninfo`, try a smaller tile, and run `doctor`. For setup failures, keep the error text and retry; completed downloads are retained. Metadata errors leave originals and existing outputs intact. Report your runtime/GPU, exact error and `doctor` output; private photos are not required.
 
