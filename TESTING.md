@@ -1,23 +1,23 @@
 # Validation results
 
-## Stable release acceptance
+## Stable release validation
 
-The user reported **full success** after testing the fixed 0.2.1 GUI. Version 0.2.1 is promoted to stable on 2026-10-03. Automated validation remains 83 passing tests; the existing AppImage is unchanged. This acceptance applies to the tested machine and workflows; Intel Vulkan and other hardware remain untested.
+Manual GUI testing of version 0.2.1 completed successfully. Version 0.2.1 is promoted to stable on 2026-10-03. Automated validation remains 83 passing tests; the existing AppImage is unchanged. Validation covers the tested machine and workflows; Intel Vulkan and other hardware remain untested.
 
 ## Extended-XMP fix (0.2.1)
 
 **83 tests passed in 47.50 seconds** on 2026-10-03, with real CUDA and Vulkan inference enabled. Report: `test-results/pytest-xmp-fix.xml`.
 
-The reported photo reproduced a tag-copy failure for XMPToolkit, HasExtendedXMP and an unknown GCamera schema. The fix preserves JPEG standard/extended XMP segments byte for byte, copies original trailer/auxiliary image bytes, and recalculates MPF pointers and primary image size. PNG/TIFF copy the complete XMP block so unknown schemas survive. Strict metadata/EXIF/ICC checks remain enabled.
+A regression photo reproduced a tag-copy failure for XMPToolkit, HasExtendedXMP and an unknown GCamera schema. The fix preserves JPEG standard/extended XMP segments byte for byte, copies original trailer/auxiliary image bytes, and recalculates MPF pointers and primary image size. PNG/TIFF copy the complete XMP block so unknown schemas survive. Strict metadata/EXIF/ICC checks remain enabled.
 
-Eleven new regression cases cover standard and multi-segment extended XMP, custom namespaces, progressive JPEG scans, little/big-endian MPF directories, exact auxiliary-image extraction, truncated scans, and unknown XMP in PNG/TIFF. Full denoising of the reported 4080 × 3072 photo passed on CUDA and AMD Vulkan with all source metadata verified. The rebuilt AppImage GUI also processed that photo using the user's installed CUDA runtime, with a result preview and metadata verification. No private photo or generated output is uploaded.
+Eleven new regression cases cover standard and multi-segment extended XMP, custom namespaces, progressive JPEG scans, little/big-endian MPF directories, exact auxiliary-image extraction, truncated scans, and unknown XMP in PNG/TIFF. Full denoising of the 4080 × 3072 regression photo passed on CUDA and AMD Vulkan with all source metadata verified. The rebuilt AppImage GUI also processed that photo using the installed CUDA runtime, with a result preview and metadata verification. No private photo or generated output is uploaded.
 
 HDR gain maps are preserved unchanged as auxiliary image data; they are not regenerated from model output. Inference uses the primary decoded RGB image.
 
 
 ## GUI/AppImage milestone (0.2.0)
 
-Completed on 2026-10-03 on CachyOS, Python 3.12.13, NVIDIA RTX 3060 12 GB (driver 615.71.09), and AMD RX 6900 XT 16 GB. PySide6/Qt 6.11.2, ncnn 1.0.20260526, PyTorch 2.7.1+cu128 / 2.7.1+cpu. Hands-on acceptance was pending at this milestone and was completed after the 0.2.1 fix, as recorded above.
+Completed on 2026-10-03 on CachyOS, Python 3.12.13, NVIDIA RTX 3060 12 GB (driver 615.71.09), and AMD RX 6900 XT 16 GB. PySide6/Qt 6.11.2, ncnn 1.0.20260526, PyTorch 2.7.1+cu128 / 2.7.1+cpu. Manual GUI testing was completed after the 0.2.1 fix, as recorded above.
 
 **72 automated tests passed in 43.50 seconds**, including real CUDA, both Vulkan devices and CPU inference. Report: `test-results/pytest-gui-runtimes.xml`.
 
@@ -48,7 +48,7 @@ The prepublication smoke used exact converted artifacts through local file URLs.
 
 ### Manual testing coverage
 
-The automated checks establish processing and metadata behavior on this machine. They do not establish desktop usability across distributions or denoising quality on the user's real camera photos. Intel Vulkan and other GPUs are untested. Use [the GUI feedback checklist](docs/GUI_TESTING.md) for display/layout/file-dialog behavior, subjective photo quality, and actual interaction with progress/cancellation/settings.
+The automated checks establish processing and metadata behavior on this machine. They do not establish desktop usability across distributions or denoising quality on real camera photos. Intel Vulkan and other GPUs are untested. Use [the GUI feedback checklist](docs/GUI_TESTING.md) for display/layout/file-dialog behavior, subjective photo quality, and actual interaction with progress/cancellation/settings.
 
 ## Original CLI validation (0.1.0)
 

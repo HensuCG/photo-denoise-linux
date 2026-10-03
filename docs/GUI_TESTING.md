@@ -1,6 +1,6 @@
 # GUI feedback checklist
 
-The user reported full success testing version 0.2.1. This checklist is retained for future releases and other machines. Automated tests cover real processing, metadata, cancellation and setup; the checks below cover actual desktop interaction and real-photo quality.
+Manual GUI testing of version 0.2.1 completed successfully. This checklist is retained for future releases and other machines. Automated tests cover real processing, metadata, cancellation and setup; the checks below cover actual desktop interaction and real-photo quality.
 
 Launch the AppImage without arguments. You can also use `./photo-denoise` from the source clone. Keep your originals; outputs use a separate suffix by default.
 
@@ -11,4 +11,4 @@ Launch the AppImage without arguments. You can also use `./photo-denoise` from t
 5. **Cancellation and recovery:** cancel a batch and confirm the window remains responsive and reports what happened. Completed outputs may remain. Cancel setup if you are installing another runtime, then retry. Check that Settings still opens afterwards.
 6. **CLI backup:** run the AppImage with `doctor` and process a photo using `denoise`; for Vulkan add `--model drunet`. Check that the runtime installed through the GUI is reused.
 
-Reply with the runtime, GPU, formats tried, and either “works” or the steps that caused a problem. Include exact error text or a screenshot for UI problems. Describe denoising quality separately from app behavior; model quality on real camera noise varies. No need to upload private photos or GPS metadata.
+Issue reports should include the runtime, GPU, file formats, reproduction steps, and exact error text or screenshots where relevant. Denoising quality and application behavior should be described separately; model quality on real camera noise varies. Private photos or GPS metadata are not required.
