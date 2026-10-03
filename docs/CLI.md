@@ -107,6 +107,8 @@ For all options:
 
 ## Metadata and pixels
 
+JPEG additionally copies its complete standard/extended XMP segments intact, retaining unknown metadata schemas. Auxiliary JPEG image/trailer bytes are retained and MPF image offsets/sizes are updated for the new primary image. Original HDR gain maps are retained, not regenerated for the denoised pixels; model inference operates on the primary decoded RGB image.
+
 JPEG and PNG copy the entire original EXIF block, including camera MakerNotes, unknown EXIF tags and embedded thumbnails. The output EXIF block is checked byte for byte before the file is published. EXIF orientation is retained and pixels are not rotated; viewers render the output using the same orientation as the input.
 
 TIFF stores EXIF alongside its image data, so TIFF metadata is copied as tags. Pixel-storage tags such as strip offsets and compression describe the new encoding and are regenerated. Existing EXIF, MakerNotes, XMP, IPTC and ICC values are checked, excluding those storage fields. TIFFs are written uncompressed; file size may increase substantially. If a metadata value cannot be retained, processing fails for that photo and no output is published.

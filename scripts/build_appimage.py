@@ -104,7 +104,7 @@ exec "$APP_ROOT/usr/python/bin/python3.12" -m photo_denoise.launch "$@"
         stdout=subprocess.DEVNULL,
         check=True,
     )
-    output = ROOT / "dist/PhotoDenoise-0.2.0-x86_64.AppImage"
+    output = ROOT / "dist/PhotoDenoise-0.2.1-x86_64.AppImage"
     output.parent.mkdir(exist_ok=True)
     env = os.environ.copy()
     env["ARCH"] = "x86_64"

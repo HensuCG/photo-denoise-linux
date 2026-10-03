@@ -9,6 +9,7 @@ import subprocess
 from pathlib import Path
 
 from .images import family
+from .jpeg_metadata import preserve_jpeg_packets
 
 # These describe the encoded file's layout, which changes when pixels are saved.
 # Camera information, GPS, orientation, capture times, profiles, and previews
@@ -111,9 +112,12 @@ def copy_metadata(source: Path, destination: Path) -> None:
         "-all:all",
         "-MakerNotes",
         "-ICC_Profile",
+        "-XMP",
         *exif,
         str(destination),
     )
+    if family(source) == "jpeg":
+        preserve_jpeg_packets(source, destination)
     before, after = snapshot(source), snapshot(destination)
     changed = [key for key, value in before.items() if after.get(key) != value]
     if changed:

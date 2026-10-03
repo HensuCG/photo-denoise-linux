@@ -276,7 +276,8 @@ def main(argv=None) -> int:
             if runtime != "vulkan":
                 device = resolve_device(device)
             if not args.quiet:
-                print(f"Loading {args.model} on {device}...", file=sys.stderr)
+                label = f"vulkan:{args.gpu_index}" if runtime == "vulkan" else str(device)
+                print(f"Loading {args.model} on {label}...", file=sys.stderr)
             denoiser = Denoiser(
                 args.model,
                 args.cache_dir.expanduser(),
